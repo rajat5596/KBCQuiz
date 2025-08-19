@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KBC PLAY ALONG</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #001f4d, #003366);
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      background: #000066;
+      padding: 15px;
+      margin: 0;
+    }
+    #quiz-container {
+      margin: 20px auto;
+      width: 90%;
+      max-width: 600px;
+      background: #002966;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.7);
+    }
+    .question {
+      font-size: 20px;
+      margin-bottom: 15px;
+    }
+    .options button {
+      display: block;
+      background: #004080;
+      color: white;
+      border: none;
+      margin: 8px auto;
+      padding: 10px;
+      width: 90%;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .options button:hover {
+      background: #0066cc;
+    }
+    .options button.selected {
+      background: goldenrod; /* yellow highlight when selected */
+    }
+    .options button.correct {
+      background: green !important;
+    }
+    .options button.wrong {
+      background: red !important;
+    }
+    #timer {
+      font-size: 18px;
+      margin: 10px 0;
+      color: yellow;
+    }
+    #score {
+      font-size: 18px;
+      margin-top: 15px;
+    }
+    #lifeline {
+      margin: 15px 0;
+    }
+    #lifeline button, #lock-btn {
+      padding: 8px 15px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      background: orange;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    #lock-btn:disabled {
+      background: gray;
+      cursor: not-allowed;
+    }
+    .ad-slot {
+      margin: 15px auto;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>KBC PLAY ALONG</h1>
+
+  <!-- Top Ad -->
+  <div class="ad-slot">
+    <script type="text/javascript">
+      atOptions = {
+        'key' : '1103b20b1d708d29a34f48f4e512eaac',
+        'format' : 'iframe',
+        'height' : 90,
+        'width' : 728,
+        'params' : {}
+      };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/1103b20b1d708d29a34f48f4e512eaac/invoke.js"></script>
+  </div>
+
+  <div id="quiz-container">
+    <div id="question" class="question"></div>
+    <div id="options" class="options"></div>
+    <div id="timer">⏳ समय: <span id="time">20</span> सेकंड</div>
+    <div id="lifeline"><button onclick="use5050()">🟨 50:50 लाइफलाइन</button></div>
+    <button id="lock-btn" disabled onclick="lockAnswer()">🔒 Lock Kijiye</button>
+    <div id="score">स्कोर: <span id="score-value">0</span></div>
+  </div>
+
+  <!-- Bottom Ad -->
+  <div class="ad-slot">
+    <script type="text/javascript">
+      atOptions = {
+        'key' : 'fa3ec2ba10a5e26285bd95e654548af5',
+        'format' : 'iframe',
+        'height' : 250,
+        'width' : 300,
+        'params' : {}
+      };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/fa3ec2ba10a5e26285bd95e654548af5/invoke.js"></script>
+  </div>
+
+  <!-- Background Sound -->
+  <audio id="bg-sound" src="sounds/background.mp3" loop></audio>
+  <audio id="lock-sound" src="sounds/lock.mp3"></audio>
+  <audio id="correct-sound" src="sounds/correct.mp3"></audio>
+  <audio id="wrong-sound" src="sounds/wrong.mp3"></audio>
+
+  <script>
+    const questions = [
+      {
+        "question": "भारत की राजधानी कौन सी है?",
+        "options": ["मुंबई", "दिल्ली", "कोलकाता", "चेन्नई"],
+        "answer": "दिल्ली"
+      },
+      {
+        "question": "ताजमहल कहाँ स्थित है?",
+        "options": ["दिल्ली", "जयपुर", "आगरा", "लखनऊ"],
+        "answer": "आगरा"
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let timer;
+    let timeLeft = 20;
+    let selectedAnswer = null;
+
+    function loadQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById("question").innerText = q.question;
+      const optionsDiv = document.getElementById("options");
+      optionsDiv.innerHTML = "";
+      q.options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.innerText = opt;
+        btn.onclick = () => selectOption(btn, opt);
+        optionsDiv.appendChild(btn);
+      });
+      document.getElementById("lock-btn").disabled = true;
+      selectedAnswer = null;
+      timeLeft = 20;
+      document.getElementById("time").innerText = timeLeft;
+      startTimer();
+      document.getElementById("bg-sound").play();
+    }
+
+    function startTimer() {
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("time").innerText = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          lockAnswer();
+        }
+      }, 1000);
+    }
+
+    function selectOption(btn, opt) {
+      const buttons = document.querySelectorAll("#options button");
+      buttons.forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedAnswer = opt;
+      document.getElementById("lock-btn").disabled = false;
+    }
+
+    function lockAnswer() {
+      if (!selectedAnswer) return;
+      clearInterval(timer);
+      document.getElementById("lock-sound").play();
+      const q = questions[currentQuestion];
+      const buttons = document.querySelectorAll("#options button");
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.innerText === q.answer) {
+          btn.classList.add("correct");
+        }
+        if (btn.innerText === selectedAnswer && selectedAnswer !== q.answer) {
+          btn.classList.add("wrong");
+        }
+      });
+      if (selectedAnswer === q.answer) {
+        score++;
+        document.getElementById("score-value").innerText = score;
+        document.getElementById("correct-sound").play();
+      } else {
+        document.getElementById("wrong-sound").play();
+      }
+      setTimeout(nextQuestion, 2000);
+    }
+
+    function nextQuestion() {
+      currentQuestion++;
+      if (currentQuestion < questions.length) {
+        loadQuestion();
+      } else {
+        document.getElementById("quiz-container").innerHTML =
+          `<h2>🎉 आपका अंतिम स्कोर: ${score}</h2>
+           <button onclick="shareScore()">📤 स्कोर शेयर करें</button>`;
+      }
+    }
+
+    function use5050() {
+      const q = questions[currentQuestion];
+      const buttons = document.querySelectorAll("#options button");
+      let removed = 0;
+      buttons.forEach(btn => {
+        if (btn.innerText !== q.answer && removed < 2) {
+          btn.style.display = "none";
+          removed++;
+        }
+      });
+      document.querySelector("#lifeline button").disabled = true;
+    }
+
+    function shareScore() {
+      const shareText = `🎯 मैंने KBC Quiz में ${score} स्कोर किया! क्या आप मुझे हरा सकते हैं? खेलें यहाँ: ${window.location.href}`;
+      if (navigator.share) {
+        navigator.share({
+          title: "KBC Quiz",
+          text: shareText,
+          url: window.location.href
+        });
+      } else {
+        prompt("लिंक कॉपी करें और शेयर करें:", window.location.href);
+      }
+    }
+
+    loadQuestion();
+  </script>
+</body>
+</html>
